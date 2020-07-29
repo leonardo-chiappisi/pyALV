@@ -20,10 +20,10 @@ from SLS_DLS1 import (extract_data, plot_raw_intensity, plot_all_g2s,
                     toluene_normalization, sample_intensity, plot_intensity,
                     analyze_static_intensity, analyze_correlation_function,
                     plot_analyzed_correlations_functions, plot_dls_results,
-                    export_DLS_parameters)
+                    export_DLS_parameters, export_intensity)
 
 plot_raw_data = False
-analyze_static = False
+analyze_static = True
 analyze_dynamic = True
 
 contin_parameters = {'LAST':1,  
@@ -64,7 +64,7 @@ sample_info['LC8.2'] = {'name': 'LC8_2', #the name of the sample
                          'dndc': 0.15, #in cm3/gram
                          'refractive_index': 1.332,
                          'qmin': None,  #minimum q-value used for the analysis of the sls data
-                         'qmax': None, #maximum q-value used for the analysis of the sls data
+                         'qmax': 0.01, #maximum q-value used for the analysis of the sls data
                          'time_series': False #True if the experiment was performed at one angle as a function of time
                          }
 
@@ -90,8 +90,10 @@ if plot_raw_data == True:
 #Analysis of the static data by Guinier analysis. 
 if analyze_static is True:
     toluene_normalization(toluene_average, sample_info)
-    sample_intensity(sample_info['LC_8.2'])
-    analyze_static_intensity(sample_info['LC_8.2'])
+    for sample in sample_info:
+        sample_intensity(sample_info[sample])
+        analyze_static_intensity(sample_info[sample])
+        export_intensity(sample_info[sample])
 #######################################################
 
 #Analysis of the correlation function according to the models specified in dls_methods. 

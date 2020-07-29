@@ -215,24 +215,53 @@ def toluene_normalization(static_tol, sample):
     return A, Aerr
 
 def sample_intensity(sample_info):
-    sample = sample_info['sample_average']
-    sample['Inten', 'mean'] = (sample['CR0']['mean']+sample['CR1']['mean'])/sample['Imon']['mean']
-    Inten_std = (sample['CR0']['std']+sample['CR1']['std'])/(sample['CR0']['mean']+sample['CR1']['mean'])
-    Inten_std += sample['Imon']['std']/sample['Imon']['mean']
-    Inten_std *= (sample['CR0']['mean']+sample['CR1']['mean'])/sample['Imon']['mean']
-    sample['Inten', 'std'] = Inten_std
-    I_tol = sample_info['Tol_int']*np.sin(np.radians(sample.index.tolist()))
-    sample['I_q', 'mean'] = sample['Inten', 'mean']/I_tol*RR #cm-1
-    sample['I_q', 'std'] = sample['Inten', 'std']/I_tol*RR #cm-1
+    sample = sample_info['sample_summary']
+    sample['Inten'] = (sample['CR0']+sample['CR1'])/sample['Imon']
+    I_tol = sample_info['Tol_int']*np.sin(np.radians(sample['Angle'].tolist()))
+    sample['I_q'] = sample['Inten']/I_tol*RR #cm-1
+    sample['I_q'] = sample['Inten']/I_tol*RR #cm-1
     # print(sample_info)
     NA = 6.022e23 #mol-1
     wl = sample_info['sample_summary']['Wavelength'].mean()
     KL = 4*np.pi**2*sample_info['refractive_index']**2*sample_info['dndc']**2/NA/(wl*1e-7)**4  #in cm2/g2/mol
-    sample['KcR', 'mean'] = sample_info['conc']*KL/sample['I_q', 'mean']
-    sample['KcR', 'std'] = sample['I_q', 'std']/sample['I_q', 'mean']*sample['KcR', 'mean']
-    
+    sample['KcR'] = sample_info['conc']*KL/sample['I_q']
+    sample['KcR'] = sample['I_q']/sample['I_q']*sample['KcR']
+#    print(sample.groupby(['Angle']).agg([np.mean])['I_q']['mean'])
+    sample_info['sample_average']['I_q', 'mean'] = sample.groupby(['Angle']).agg([np.mean])['I_q']['mean'] 
+    sample_info['sample_average']['I_q', 'std'] = sample.groupby(['Angle']).agg([np.std])['I_q']['std'] 
+    sample_info['sample_average']['KcR', 'mean'] = sample.groupby(['Angle']).agg([np.mean])['KcR']['mean']
+    sample_info['sample_average']['KcR', 'std'] = sample.groupby(['Angle']).agg([np.std])['KcR']['std']
+#    print(sample_info['sample_average'])
     return None
 
+def export_intensity(sample_info):
+    sample = sample_info['sample_average']
+#    print(sample)
+    static_to_be_exported = pd.DataFrame()
+    static_to_be_exported['T'] = sample['T','mean']
+    static_to_be_exported['q'] = sample['q','mean']
+    static_to_be_exported['Imon_mean'] = sample['Imon','mean']
+    static_to_be_exported['Imon_std'] = sample['Imon','std']
+    static_to_be_exported['Iq_mean'] = sample['I_q','mean']
+    static_to_be_exported['Iq_std'] = sample['I_q','std']
+    static_to_be_exported['KcR_mean'] = sample['KcR','mean']
+    static_to_be_exported['KcR_std'] = sample['KcR','std']
+    try:
+        Iq = sample_info['I0']*np.exp(-1/3*sample_info['Rg']**2*sample['q', 'mean']**2)
+        static_to_be_exported['Guinier_fit'] = Iq
+    except:
+        None
+#    print(static_to_be_exported)
+#    static_to_be_exported['Angle'] = sample.index.tolist()
+#    columns_to_be_exported = 
+    filename = os.path.join(sample_info['data_path'], 'SLS_params.csv')
+    with open(filename, 'w+') as f:
+        header = '#Units are K for the Temperature, cm^-1 for the intensity, 1/nm for the scattering vector, and mol/g for KcR\n'
+        f.write(header)
+    
+    static_to_be_exported.to_csv(filename, mode='a')
+    
+    return None
 
 def plot_intensity(sample_info):
     ''' Function where the static intensities are plotted. Two plots will be generated:
@@ -298,14 +327,14 @@ def analyze_static_intensity(sample_info):
             
         #initialization of the fit routine for the guinier fit.
         fit_params = Parameters()
-        fit_params.add('I0', value = 1.0, vary=True)
+        fit_params.add('I0', value = 10.0, min=1e-5, vary=True)
         fit_params.add('Rg', value = 15.0, min=5.0, max=400, vary=True)
-        
         
         
         def f2min(params):
             vals = params.valuesdict()
             Iq = np.log(vals['I0']) - 1/3*(vals['Rg']**2)*(sample['q', 'mean']**2)
+            
 
             #the function is evaluated only between qmin and qmax, if provided.             
             try:
@@ -323,6 +352,7 @@ def analyze_static_intensity(sample_info):
             mask =  np.logical_and(mask_1, mask_2)
 
             res = ((np.log(sample['I_q', 'mean']) - Iq) / (sample['I_q', 'std']/sample['I_q', 'mean']))[mask].to_numpy()
+
             return res
         
         out = minimize(f2min, fit_params, xtol=1e-6)
