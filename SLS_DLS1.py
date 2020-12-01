@@ -15,6 +15,7 @@ from pandas.plotting import register_matplotlib_converters
 import scipy.optimize as opt
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
+import matplotlib.patches as mpatches
 from lmfit import minimize, Parameters, fit_report
 import SLS_DLS2 as dls
 
@@ -293,18 +294,30 @@ def plot_intensity(sample_info):
     mask_2 =  sample['q', 'mean'].to_numpy() < maxq
     mask =  np.logical_and(mask_1, mask_2)
     
-    ax1.errorbar(sample['q', 'mean'][mask],  sample['I_q', 'mean'][mask], color='C0', marker='s', yerr=sample['I_q', 'std'][mask],  label=sample_info['name'])
+    scatter = ax1.errorbar(sample['q', 'mean'][mask],  sample['I_q', 'mean'][mask], color='C0', marker='s', yerr=sample['I_q', 'std'][mask],  label=sample_info['name'])
     mask = [x for x in mask == False]
     ax1.errorbar(sample['q', 'mean'][mask],  sample['I_q', 'mean'][mask], color='C0', marker='s', yerr=sample['I_q', 'std'][mask], alpha=0.5)
     ax1.set_ylim(ax1.get_ylim())
 
     try:
         Iq = sample_info['I0']*np.exp(-1/3*sample_info['Rg']**2*sample['q', 'mean']**2)
-        ax1.plot(sample['q', 'mean'], Iq, label='Guinier fit', color='C2')
+        fit = ax1.plot(sample['q', 'mean'], Iq, label='Guinier fit', color='C2')
+        s1 = 'I(0) = {:.2f} $\pm$ {:.2f} $cm^{{-1}}$'.format(sample_info['I0'],  sample_info['I0_err'])
+        s2 = 'R$_g$ = {:.0f} $\pm$ {:.0f} nm'.format(sample_info['Rg'],  sample_info['Rg_err'])
     except:
+        s1, s2 = '', ''
         print('Could not plot guinier fits')
+
     
-    ax1.legend()
+    # extra = Rectangle((0, 0), 1, 1, fc="w", fill=False, edgecolor='none', linewidth=0)
+    
+    handles, labels = ax1.get_legend_handles_labels()
+    handles.append(mpatches.Patch(color='none', label=s1))
+    handles.append(mpatches.Patch(color='none', label=s2))
+    ax1.legend(handles=handles)
+    
+    
+    # plt.legend([scatter, fit, extra, extra],[scatter.get_label(), fit.get_label(), s1, s2], loc='best')
     
     ax2.ticklabel_format(axis='y', style='sci', scilimits=(0,0))
     ax2.set_xlabel(r'$sin(\theta/2$)')
@@ -312,6 +325,7 @@ def plot_intensity(sample_info):
     
     ax2.errorbar(np.sin(np.radians(sample.index/2)),  sample['KcR', 'mean'], marker='s', yerr=sample['KcR', 'std'])
     
+    plt.tight_layout()
     plt.savefig(str(sample_info['name'])+'_static.pdf')
     # plt.close()
     return None
@@ -356,7 +370,7 @@ def analyze_static_intensity(sample_info):
             return res
         
         out = minimize(f2min, fit_params, xtol=1e-6)
-        # print(fit_report(out))
+        print(fit_report(out))
         return out.params['I0'].value, out.params['I0'].stderr, out.params['Rg'].value, out.params['Rg'].stderr
             
     sample_info['I0'],  sample_info['I0_err'], sample_info['Rg'], sample_info['Rg_err'] = Guinier(sample)
