@@ -219,18 +219,18 @@ def sample_intensity(sample_info):
     sample['Inten'] = (sample['CR0']+sample['CR1'])/sample['Imon']
     I_tol = sample_info['Tol_int']*np.sin(np.radians(sample['Angle'].tolist()))
     sample['I_q'] = sample['Inten']/I_tol*RR #cm-1
-    sample['I_q'] = sample['Inten']/I_tol*RR #cm-1
+    # sample['I_q'] = sample['Inten']/I_tol*RR #cm-1
     # print(sample_info)
     NA = 6.022e23 #mol-1
     wl = sample_info['sample_summary']['Wavelength'].mean()
     KL = 4*np.pi**2*sample_info['refractive_index']**2*sample_info['dndc']**2/NA/(wl*1e-7)**4  #in cm2/g2/mol
     sample['KcR'] = sample_info['conc']*KL/sample['I_q']
     sample['KcR'] = sample['I_q']/sample['I_q']*sample['KcR']
-#    print(sample.groupby(['Angle']).agg([np.mean])['I_q']['mean'])
-    sample_info['sample_average']['I_q', 'mean'] = sample.groupby(['Angle']).agg([np.mean])['I_q']['mean'] 
-    sample_info['sample_average']['I_q', 'std'] = sample.groupby(['Angle']).agg([np.std])['I_q']['std'] 
-    sample_info['sample_average']['KcR', 'mean'] = sample.groupby(['Angle']).agg([np.mean])['KcR']['mean']
-    sample_info['sample_average']['KcR', 'std'] = sample.groupby(['Angle']).agg([np.std])['KcR']['std']
+    sample_info['sample_average']['I_q', 'mean'] = sample.groupby(['Angle']).mean()['I_q'] 
+    
+    sample_info['sample_average']['I_q', 'std'] = sample.groupby(['Angle']).std()['I_q'] 
+    sample_info['sample_average']['KcR', 'mean'] = sample.groupby(['Angle']).mean()['KcR']
+    sample_info['sample_average']['KcR', 'std'] = sample.groupby(['Angle']).std()['KcR']
 #    print(sample_info['sample_average'])
     return None
 
@@ -394,8 +394,8 @@ def plot_analyzed_correlations_functions(sample_info, dls_methods):
                     ax1 = fig.add_subplot(gs0[0])
                     ax2 = fig.add_subplot(gs0[1], sharex=ax1)
                     
-                    ax1.set_xscale("log", nonposx='clip')
-                    ax2.set_xscale("log", nonposx='clip')
+                    ax1.set_xscale("log", nonpositive='clip')
+                    ax2.set_xscale("log", nonpositive='clip')
                     
                     ax1.set_ylabel('$g^{(2)}(\\tau$)')
                     ax2.set_xlabel('$\\tau$ / ms')
@@ -426,8 +426,8 @@ def plot_analyzed_correlations_functions(sample_info, dls_methods):
                     ax1 = fig.add_subplot(gs1[0])
                     ax2 = fig.add_subplot(gs1[1], sharex=ax1)
                     
-                    ax1.set_xscale("log", nonposx='clip')
-                    ax2.set_xscale("log", nonposx='clip')
+                    ax1.set_xscale("log", nonpositive='clip')
+                    ax2.set_xscale("log", nonpositive='clip')
                     
                     ax1.set_title('Frisken Analysis')
                     ax1.set_ylabel('$g^{(2)}(\\tau$)')
@@ -440,14 +440,15 @@ def plot_analyzed_correlations_functions(sample_info, dls_methods):
                     
                     counter += 1 
                     
+                    
                 if dls_methods['Stretched_exponential'] is True:
                     gs1 = gridspec.GridSpecFromSubplotSpec(2, 1,  subplot_spec=outer[counter], hspace=0.0, height_ratios=[2,1])
                     
                     ax1 = fig.add_subplot(gs1[0])
                     ax2 = fig.add_subplot(gs1[1], sharex=ax1)
                     
-                    ax1.set_xscale("log", nonposx='clip')
-                    ax2.set_xscale("log", nonposx='clip')
+                    ax1.set_xscale("log", nonpositive='clip')
+                    ax2.set_xscale("log", nonpositive='clip')
                     
                     ax1.set_title('Stretched exponential Analysis')
                     ax1.set_ylabel('$g^{(2)}(\\tau$)')
@@ -459,11 +460,17 @@ def plot_analyzed_correlations_functions(sample_info, dls_methods):
                     ax2.plot( data['sample_data'][run]['g2s'].index.to_list(), residual)
                     
                     counter += 1             
-                
+                    
                 #plt.tight_layout()
                 plt.savefig(str(data['data_path'])+'/' + str(run).split('.ASC')[0] + '.png')
                 plt.close()
-                
+            
+            if dls_methods['Cumulant'] is True:
+                print('Cumulant analysis on sample {} performed'.format(sample))
+            if dls_methods['Stretched_exponential'] is True:
+                print('Stretched exponential fit on sample {} performed'.format(sample))
+            if dls_methods['Frisken'] is True:
+                print('Frisken fit on sample {} performed'.format(sample))
     return None
    
 def plot_dls_results(sample_info, dls_methods):
