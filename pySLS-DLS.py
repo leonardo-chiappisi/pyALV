@@ -2,11 +2,13 @@
 # -*- coding: utf-8 -*-
 """
 Created on Thu Dec 19 16:46:14 2019
-
 @author: Leonardo Chiappisi
-
 Script for the analysis of static and dynamic light scattering data from the ALV DLS/SLS machine. 
+2021.03.02 = Bug correction in the calculation of the scattering intensity. 
 """
+
+version = '0.1'
+date = '2021.03.02'
 
 import matplotlib.pyplot as plt
 import warnings
@@ -22,7 +24,7 @@ from SLS_DLS1 import (extract_data, plot_raw_intensity, plot_all_g2s,
                     plot_analyzed_correlations_functions, plot_dls_results,
                     export_DLS_parameters, export_intensity)
 
-plot_raw_data = False
+plot_raw_data = True
 analyze_static = True
 analyze_dynamic = True
 
@@ -43,30 +45,33 @@ contin_parameters = {'LAST':1,
 
 
 #methods used to analyze the DLS data. 
-dls_methods = {'Cumulant': True, #cumulant analsis of the data with a cutoff defined by the Cumulat_decay parameter is performed. 
+dls_methods = {'Cumulant': False, #cumulant analsis of the data with a cutoff defined by the Cumulat_decay parameter is performed. 
                'Cumulant_decay': 0.5, #The correlation function is analyzed until it has decay to xxx of the initial value. 
                'Frisken': True, #correlation curve fitted with the Frisken method
                'Double_exponential': False, #not_yet_implemented
-               'Stretched_exponential': True, #The correlation function is analysed with a stretched exponential decay. 
+               'Stretched_exponential': False, #The correlation function is analysed with a stretched exponential decay. 
                'Contin': False, #not_yet_implemented
                'Contin_pars': contin_parameters #dictionary containing all the parameters needed to perfom the contin analysis.
                }
 
 toluene = {'name': 'toluene',
-           'data_path': 'toluene',
+           'data_path': 'toluene', #relative path where toluene *.ASC files are saved.
+           'data_path_solvent': '', #leave empty. 
            'refractive_index': 1.496}
 
 
 sample_info = {} #dictionary where all informations on the sample are stored. All the sample defined therein will be analysed. 
-sample_info['LC8.2'] = {'name': 'LC8_2', #the name of the sample
-                         'data_path': 'rawdata/LC8.2',  #the datapath where all the ASC files are stored, can be relative or absolute. 
+sample_info['AY38_G4-2.0-typeB'] = {'name': 'AY38_G4-2.0-typeB', #the name of the sample
+                         'data_path': 'rawdata',  #the datapath where all the ASC files are stored, can be relative or absolute. 
+                         'data_path_solvent': '',  #the datapath where all the ASC files relative to the solvent are stored, can be relative or absolute. 
                          'conc': 0.1, #in gram/cm3
                          'dndc': 0.15, #in cm3/gram
                          'refractive_index': 1.332,
                          'qmin': None,  #minimum q-value used for the analysis of the sls data
-                         'qmax': 0.01, #maximum q-value used for the analysis of the sls data
+                         'qmax': None, #maximum q-value used for the analysis of the sls data
                          'time_series': False #True if the experiment was performed at one angle as a function of time
                          }
+
 
 
 

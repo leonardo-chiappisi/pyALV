@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 """
 Created on Fri Dec 20 11:18:26 2019
-
 @author: chiappisil
 """
 from math import radians, exp
@@ -97,13 +96,38 @@ def extract_data(sample_info):
     
     data_summary['q'] = 4*np.pi/data_summary['Wavelength']*sample_info['refractive_index']*np.sin(np.radians(data_summary['Angle']/2))
     
-#    data_summary['Date_time']= pd.to_datetime(data_summary['Date'] + '' + data_summary['Time'])     
-#    data_summary['Date']= pd.to_datetime(data_summary['Date'])     
-#    data_summary['Time']= pd.to_datetime(data_summary['Time'])     
     data_summary['Date_Time']= pd.to_datetime(data_summary['Date_Time'])        
-    print('Data from {} imported correcty.'.format(data_path))
     data_average = data_summary.groupby(['Angle']).agg([np.mean, np.std])
+    print('Data from {} imported correcty.'.format(data_path))
+    
+    
+    data_solvent = {}
+    if sample_info['data_path_solvent']: #if the solvent data path has been provided
+        solvent_path = sample_info['data_path_solvent']
+        for file in sorted(os.listdir(solvent_path)):
+            if file.endswith(".ASC"):
+                data_solvent[file] =  extract_data_file(solvent_path, file)  
+        parameters = ['T', 'Angle', 'Imon', 'CR0', 'CR1', 'mean_CR0', 'mean_CR1', 'Date_Time', 'Wavelength'] #parameters found in the summary pandas dataframe
+        solvent_summary =  pd.DataFrame(columns=parameters)
+        for key in data_solvent:
+            temp_dict = {requested_value : data_solvent[key][requested_value] for requested_value in parameters}
+            solvent_summary.loc[key] = temp_dict
+    
+        solvent_summary['q'] = 4*np.pi/data_summary['Wavelength']*sample_info['refractive_index']*np.sin(np.radians(data_summary['Angle']/2))
+        solvent_summary['Date_Time']= pd.to_datetime(solvent_summary['Date_Time'])        
+        print('Data from {} imported correcty.'.format(solvent_path))
+
+
+
+
+
+    
+    
     return data, data_summary, data_average
+
+
+
+
 
 def plot_raw_intensity(data, title):
     ''' Here all count rate traces for each file are plotted. The main goal is 
@@ -215,10 +239,17 @@ def toluene_normalization(static_tol, sample):
         sample[key]['Tol_int_err'] = Aerr[0][0]
     return A, Aerr
 
+def solvent_intensity(sample_info):
+    
+    return None
+
+
+
+
 def sample_intensity(sample_info):
     sample = sample_info['sample_summary']
     sample['Inten'] = (sample['CR0']+sample['CR1'])/sample['Imon']
-    I_tol = sample_info['Tol_int']*np.sin(np.radians(sample['Angle'].tolist()))
+    I_tol = sample_info['Tol_int']/np.sin(np.radians(sample['Angle'].tolist()))
     sample['I_q'] = sample['Inten']/I_tol*RR #cm-1
     # sample['I_q'] = sample['Inten']/I_tol*RR #cm-1
     # print(sample_info)
@@ -321,8 +352,7 @@ def plot_intensity(sample_info):
     
     ax2.ticklabel_format(axis='y', style='sci', scilimits=(0,0))
     ax2.set_xlabel(r'$sin(\theta/2$)')
-    ax2.set_ylabel('K$_L$c/R / mol g$^{-1}$')
-    
+    ax2.set_ylabel('K$_L$c/R / mol g$^{-1}$')    # 
     ax2.errorbar(np.sin(np.radians(sample.index/2)),  sample['KcR', 'mean'], marker='s', yerr=sample['KcR', 'std'])
     
     plt.tight_layout()
@@ -341,16 +371,15 @@ def analyze_static_intensity(sample_info):
             
         #initialization of the fit routine for the guinier fit.
         fit_params = Parameters()
-        fit_params.add('I0', value = 10.0, min=1e-5, vary=True)
+        fit_params.add('I0', value = sample['I_q', 'mean'].to_numpy()[0], min=1e-6, vary=True)
         fit_params.add('Rg', value = 15.0, min=5.0, max=400, vary=True)
         
         
         def f2min(params):
             vals = params.valuesdict()
             Iq = np.log(vals['I0']) - 1/3*(vals['Rg']**2)*(sample['q', 'mean']**2)
-            
 
-            #the function is evaluated only between qmin and qmax, if provided.             
+            #the function is evaluated only between qmin and qmax, if provided.            
             try:
                 minq = 0.0 if sample_info['qmin'] is None else sample_info['qmin']
             except:
@@ -359,15 +388,18 @@ def analyze_static_intensity(sample_info):
                 maxq = 10.0 if sample_info['qmax'] is None else sample_info['qmax']
             except:
                 maxq = 10.0
-            
-            
+           
+           
             mask_1 =  sample['q', 'mean'].to_numpy() > minq
             mask_2 =  sample['q', 'mean'].to_numpy() < maxq
             mask =  np.logical_and(mask_1, mask_2)
+ 
+            if np.isnan(sample['I_q', 'std'].to_numpy()).any():
+                res = (np.log(sample['I_q', 'mean']) - Iq)
+            else:
+                res = ( (np.log(sample['I_q', 'mean']) - Iq) / (sample['I_q', 'std']/sample['I_q', 'mean'])).to_numpy()
 
-            res = ((np.log(sample['I_q', 'mean']) - Iq) / (sample['I_q', 'std']/sample['I_q', 'mean']))[mask].to_numpy()
-
-            return res
+            return res[mask]
         
         out = minimize(f2min, fit_params, xtol=1e-6)
         print(fit_report(out))
