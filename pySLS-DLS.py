@@ -24,7 +24,7 @@ from SLS_DLS1 import (extract_data, plot_raw_intensity, plot_all_g2s,
                     plot_analyzed_correlations_functions, plot_dls_results,
                     export_DLS_parameters, export_intensity)
 
-plot_raw_data = True
+plot_raw_data = False
 analyze_static = True
 analyze_dynamic = True
 
@@ -45,11 +45,11 @@ contin_parameters = {'LAST':1,
 
 
 #methods used to analyze the DLS data. 
-dls_methods = {'Cumulant': False, #cumulant analsis of the data with a cutoff defined by the Cumulat_decay parameter is performed. 
+dls_methods = {'Cumulant': True, #cumulant analsis of the data with a cutoff defined by the Cumulat_decay parameter is performed. 
                'Cumulant_decay': 0.5, #The correlation function is analyzed until it has decay to xxx of the initial value. 
                'Frisken': True, #correlation curve fitted with the Frisken method
-               'Double_exponential': False, #not_yet_implemented
-               'Stretched_exponential': False, #The correlation function is analysed with a stretched exponential decay. 
+               'Double_exponential': True, #not_yet_implemented
+               'Stretched_exponential': True, #The correlation function is analysed with a stretched exponential decay. 
                'Contin': False, #not_yet_implemented
                'Contin_pars': contin_parameters #dictionary containing all the parameters needed to perfom the contin analysis.
                }
@@ -62,15 +62,15 @@ toluene = {'name': 'toluene',
 
 sample_info = {} #dictionary where all informations on the sample are stored. All the sample defined therein will be analysed. 
 sample_info['AY38_G4-2.0-typeB'] = {'name': 'AY38_G4-2.0-typeB', #the name of the sample
-                         'data_path': 'rawdata',  #the datapath where all the ASC files are stored, can be relative or absolute. 
-                         'data_path_solvent': '',  #the datapath where all the ASC files relative to the solvent are stored, can be relative or absolute. 
-                         'conc': 0.1, #in gram/cm3
-                         'dndc': 0.15, #in cm3/gram
-                         'refractive_index': 1.332,
-                         'qmin': None,  #minimum q-value used for the analysis of the sls data
-                         'qmax': None, #maximum q-value used for the analysis of the sls data
-                         'time_series': False #True if the experiment was performed at one angle as a function of time
-                         }
+                                    'data_path': 'rawdata',  #the datapath where all the ASC files are stored, can be relative or absolute. 
+                                    'data_path_solvent': '',  #the datapath where all the ASC files relative to the solvent are stored, can be relative or absolute. 
+                                    'conc': 0.1, #in gram/cm3
+                                    'dndc': 0.15, #in cm3/gram
+                                    'refractive_index': 1.332,
+                                    'qmin': None,  #minimum q-value used for the analysis of the sls data
+                                    'qmax': None, #maximum q-value used for the analysis of the sls data
+                                    'time_series': False #True if the experiment was performed at one angle as a function of time
+                                    }
 
 
 
@@ -84,17 +84,17 @@ for sample in sample_info:
 
 #plots the raw data
 if plot_raw_data == True:
-    plot_raw_intensity(toluene_data, 'toluene')
-    plot_all_g2s(toluene_data, 'toluene')
+    plot_raw_intensity(toluene_data, 'toluene', path=toluene['data_path'])
+    plot_all_g2s(toluene_data, 'toluene', path=toluene['data_path'])
     for sample in sample_info:
         s = sample_info[sample]
-        plot_raw_intensity(s['sample_data'], s['name'])
-        plot_all_g2s(s['sample_data'], s['name'])
+        plot_raw_intensity(s['sample_data'], s['name'], path=s['data_path'])
+        plot_all_g2s(s['sample_data'], s['name'], path=s['data_path'])
 ############################################
 
 #Analysis of the static data by Guinier analysis. 
 if analyze_static is True:
-    toluene_normalization(toluene_average, sample_info)
+    toluene_normalization(toluene_average, sample_info, path=toluene['data_path'])
     for sample in sample_info:
         sample_intensity(sample_info[sample])
         analyze_static_intensity(sample_info[sample])
@@ -108,3 +108,4 @@ if analyze_dynamic is True:
     plot_dls_results(sample_info, dls_methods)
     export_DLS_parameters(sample_info, dls_methods)
 #######################################################
+# print(sample_info)

@@ -6,6 +6,7 @@ Created on Fri Dec 20 11:18:26 2019
 """
 from math import radians, exp
 from scipy.special import gamma
+from scipy.stats import linregress
 import os as os
 import numpy as np
 import sys
@@ -117,10 +118,6 @@ def extract_data(sample_info):
         solvent_summary['Date_Time']= pd.to_datetime(solvent_summary['Date_Time'])        
         print('Data from {} imported correcty.'.format(solvent_path))
 
-
-
-
-
     
     
     return data, data_summary, data_average
@@ -129,7 +126,7 @@ def extract_data(sample_info):
 
 
 
-def plot_raw_intensity(data, title):
+def plot_raw_intensity(data, title, path):
     ''' Here all count rate traces for each file are plotted. The main goal is 
     to be able to rapidly spot problems in the measurements. 
     '''
@@ -159,13 +156,13 @@ def plot_raw_intensity(data, title):
         i+= 1
     
     gs.tight_layout(fig)
-    plt.savefig('{}_raw_CR.pdf'.format(title))
+    plt.savefig(os.path.join(path, '{}_raw_CR.pdf'.format(title)))
     plt.close(fig)
     print('Countrates of {} correctly plotted.'.format(title))
     return None
 
 
-def plot_all_g2s(data, title):
+def plot_all_g2s(data, title, path):
     ''' Here all intensity correlation functions for each file are plotted. The main goal is 
     to be able to rapidly spot problems in the measurements. 
     '''
@@ -198,13 +195,13 @@ def plot_all_g2s(data, title):
         i+= 1
     
     gs.tight_layout(fig)
-    plt.savefig('{}_raw_g2s.pdf'.format(title))
+    plt.savefig(os.path.join(path, '{}_raw_g2s.pdf'.format(title)))
     print('Correlation functions of {} correctly plotted.'.format(title))
     plt.close(fig)
     
     return None
 
-def toluene_normalization(static_tol, sample):
+def toluene_normalization(static_tol, sample, path):
     '''In this function, the toluene static intensities are plotted. The intensity
     is calculated as the average of the countrates CR0 and CR1, and normalized by the
     monitor intensity. The angle dependent intensity is fitted with the function:
@@ -231,7 +228,7 @@ def toluene_normalization(static_tol, sample):
     ax.set_ylabel('CR0+CR1 / Imon / a.u.')
     ax.plot(static_tol.index.tolist(), model(static_tol.index.tolist(), A))
     
-    fig.savefig('toluene.pdf')
+    fig.savefig(os.path.join(path, 'toluene.pdf'))
     plt.close(fig)
     
     for key in sample:
@@ -240,7 +237,6 @@ def toluene_normalization(static_tol, sample):
     return A, Aerr
 
 def solvent_intensity(sample_info):
-    
     return None
 
 
@@ -356,7 +352,7 @@ def plot_intensity(sample_info):
     ax2.errorbar(np.sin(np.radians(sample.index/2)),  sample['KcR', 'mean'], marker='s', yerr=sample['KcR', 'std'])
     
     plt.tight_layout()
-    plt.savefig(str(sample_info['name'])+'_static.pdf')
+    plt.savefig(os.path.join(sample_info['data_path'], str(sample_info['name'])+'_static.pdf'))
     # plt.close()
     return None
 
@@ -411,9 +407,6 @@ def analyze_static_intensity(sample_info):
     return None
 
 
-
-
-      
 
 def plot_analyzed_correlations_functions(sample_info, dls_methods):
     ''' Function where all correlation functions are plotted, together with the
@@ -508,7 +501,7 @@ def plot_analyzed_correlations_functions(sample_info, dls_methods):
                     counter += 1             
                     
                 #plt.tight_layout()
-                plt.savefig(str(data['data_path'])+'/' + str(run).split('.ASC')[0] + '.png')
+                plt.savefig(os.path.join(data['data_path'], str(run).split('.ASC')[0] + '.png'))
                 plt.close()
             
             if dls_methods['Cumulant'] is True:
@@ -531,45 +524,79 @@ def plot_dls_results(sample_info, dls_methods):
             plt.xlabel('Date and Time')
            
             if dls_methods['Frisken'] is True:
-               
                D_app_Frisken = data['FR_Gamma']/(data['q'])**2 * 1000 / 1e6 #from nm^2/ms to mu2/s
                plt.plot(data['Date_Time'], D_app_Frisken, 'bo', alpha=0.75, label='Frisken fit')
              
                 
             if dls_methods['Cumulant'] is True:
-               
                D_app_cumulant = data['CM_Gamma']/(data['q'])**2 * 1000 / 1e6 #from nm^2/ms to mu2/s
                plt.plot(data['Date_Time'], D_app_cumulant, 'rs',  alpha=0.75, label='Cumulant fit')
     
             if dls_methods['Stretched_exponential'] is True:
-               
                D_app_stretched = data['SE_Gamma']/data['SE_beta']*gamma(1/data['SE_beta'])/(data['q'])**2 * 1000 / 1e6 #from nm^2/ms to mu2/s
                plt.plot(data['Date_Time'], D_app_stretched, 'mv',  alpha=0.75, label='Stretched exp. fit')             
            
            
        else:
-           plt.figure()
+           fig = plt.figure()
+           ax = fig.add_subplot(111)
            plt.ylabel('D$_{app}$ = $\Gamma$/q$^2$ / $\mu$m^2 s$^{-1}$')
            plt.xlabel('q$^2$ / 10$^{-4}$ nm$^{-2}$')
            
            if dls_methods['Frisken'] is True:
-               
                D_app_Frisken = data['FR_Gamma']/(data['q'])**2 * 1000 / 1e6 #from nm^2/ms to mu2/s
-               plt.plot(data['q']**2*1e4, D_app_Frisken, 'bo', alpha=0.75, label='Frisken fit')
-             
-                
+               ax.plot(data['q']**2*1e4, D_app_Frisken, 'bo', alpha=0.75, label='Frisken fit')
+
+               linfit = linregress(data['q']**2*1e4, D_app_Frisken)
+               Dapp_fit = data['q']**2*1e4*linfit.slope + linfit.intercept
+               ax.plot(data['q']**2*1e4, Dapp_fit)
+               try:
+                   sample_info[sample]['D0_Frisken'], sample_info[sample]['D0_Frisken_err'] = linfit.intercept, linfit.intercept_stderr
+                   s1 = 'D(0)$_{{Frisken}}$ = {:.2f} $\pm$ {:.2f} $\mu$m^2 s$^{{-1}}$'.format(sample_info[sample]['D0_Frisken'],  sample_info[sample]['D0_Frisken_err'])
+               except:
+                   sample_info[sample]['D0_Frisken'], sample_info[sample]['D0_Frisken_err'] = linfit.intercept, np.nan
+                   s1 = 'D(0)$_{{Frisken}}$ = {:.2f} $\mu$m^2 s$^{{-1}}$'.format(sample_info[sample]['D0_Frisken'])
+            
+               ax.plot([],[], ' ', label=s1)
+    
            if dls_methods['Cumulant'] is True:
-               
                D_app_cumulant = data['CM_Gamma']/(data['q'])**2 * 1000 / 1e6 #from nm^2/ms to mu2/s
-               plt.plot(data['q']**2*1e4, D_app_cumulant, 'rs',  alpha=0.75, label='Cumulant fit')
+               ax.plot(data['q']**2*1e4, D_app_cumulant, 'rs',  alpha=0.75, label='Cumulant fit')
+               
+               linfit = linregress(data['q']**2*1e4, D_app_cumulant)
+               Dapp_fit = data['q']**2*1e4*linfit.slope + linfit.intercept
+               ax.plot(data['q']**2*1e4, Dapp_fit, color='red')
+               try:
+                   sample_info[sample]['D0_Cumulant'], sample_info[sample]['D0_Cumulant_err'] = linfit.intercept, linfit.intercept_stderr
+                   s1 = 'D(0)$_{{Cumulant}}$ = {:.2f} $\pm$ {:.2f} $\mu$m^2 s$^{{-1}}$'.format(sample_info[sample]['D0_Cumulant'],  sample_info[sample]['D0_Cumulant_err'])
+               except:
+                   sample_info[sample]['D0_Cumulant'], sample_info[sample]['D0_Cumulant_err'] = linfit.intercept, np.nan
+                   s1 = 'D(0)$_{{Cumulant}}$ = {:.2f} $\mu$m^2 s$^{{-1}}$'.format(sample_info[sample]['D0_Cumulant'])
+            
+               ax.plot([],[], ' ', label=s1)
     
            if dls_methods['Stretched_exponential'] is True:
-               
                D_app_stretched = data['SE_Gamma']/data['SE_beta']*gamma(1/data['SE_beta'])/(data['q'])**2 * 1000 / 1e6 #from nm^2/ms to mu2/s
                plt.plot(data['q']**2*1e4, D_app_stretched, 'mv',  alpha=0.75, label='Stretched exp. fit')        
 
-       plt.legend()
-       plt.savefig(str(sample) + 'Dapp.pdf')
+               linfit = linregress(data['q']**2*1e4, D_app_stretched)
+               Dapp_fit = data['q']**2*1e4*linfit.slope + linfit.intercept
+               ax.plot(data['q']**2*1e4, Dapp_fit, color='magenta')
+               try:
+                   sample_info[sample]['D0_stretched'], sample_info[sample]['D0_stretched_err'] = linfit.intercept, linfit.intercept_stderr
+                   s1 = 'D(0)$_{{stretched}}$ = {:.2f} $\pm$ {:.2f} $\mu$m^2 s$^{{-1}}$'.format(sample_info[sample]['D0_stretched'],  sample_info[sample]['D0_stretched_err'])
+               except:
+                   sample_info[sample]['D0_stretched'], sample_info[sample]['D0_stretched_err'] = linfit.intercept, np.nan
+                   s1 = 'D(0)$_{{stretched}}$ = {:.2f} $\mu$m^2 s$^{{-1}}$'.format(sample_info[sample]['D0_stretched'])
+            
+               ax.plot([],[], ' ', label=s1)
+
+
+
+
+       ax.legend()
+       plt.tight_layout()
+       plt.savefig(os.path.join(sample_info[sample]['data_path'], str(sample) + 'Dapp.pdf'))
        plt.show()
        
     return None
