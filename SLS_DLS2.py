@@ -46,14 +46,16 @@ def Cumulant(g2_tau,decay):
     new_g2 = g2[g2>Intercept*decay]
 
     fit_params = Parameters()
-    fit_params.add('A', value = Intercept, vary=True)
+    fit_params.add('A', value = Intercept, min = 1e-10, vary=True)
     fit_params.add('Gamma', value = 0.01, min=0.001, vary=True)
     fit_params.add('mu2', value = 0.01, vary=True)
     
     def f2min(params):
         vals = params.valuesdict()
         model = log(vals['A']) - 2*vals['Gamma']*new_tau +vals['mu2']/2*new_tau**2
-        return (np.log(new_g2) - model)
+        res = (np.log(new_g2) - model)
+        # print(type(res), res)
+        return res[~np.isnan(res)]
         
     out = minimize(f2min, fit_params, xtol=1e-6)
     
