@@ -29,7 +29,7 @@ plot_raw_data = False
 analyze_static = True
 analyze_dynamic = True
 
-contin_parameters = {'LAST':1,  
+contin_parameters = {'LAST':1,  1
                      'TIME': [1e-4, 1e2],   #range of decay times analyzed.
                      'IWT':2,                                     
                      'NERFIT':0,                                       
