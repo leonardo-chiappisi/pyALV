@@ -699,3 +699,31 @@ def export_DLS_parameters(sample_info, dls_methods):
     
     
     return None
+
+def export_results(sample_info):
+    try:
+        results = pd.read_csv('results.csv')
+    except:
+        results = pd.DataFrame(columns=['Sample', 'Tol_int','Tol_int_err','I0','I0_err','Rg','Rg_err','D0_Frisken','D0_Frisken_err','D0_Cumulant','D0_Cumulant_err','D0_stretched','D0_stretched_err'])
+        
+    
+    for sample in sample_info:
+        s = sample_info[sample]
+        params = {'Sample': sample}
+        for pars in results:
+            if pars == 'Sample':
+                None
+            else:
+                # print(pars)
+                # print(pars, s[pars])
+                params[pars] = s[pars]
+        # print(params)
+        results = results.append(params, ignore_index=True)
+        results.set_index('Sample', inplace=True)
+    
+    results.to_csv('results.csv')
+            
+            
+    
+    
+    

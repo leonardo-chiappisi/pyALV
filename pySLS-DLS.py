@@ -5,10 +5,11 @@ Created on Thu Dec 19 16:46:14 2019
 @author: Leonardo Chiappisi
 Script for the analysis of static and dynamic light scattering data from the ALV DLS/SLS machine. 
 2021.03.02 = Bug correction in the calculation of the scattering intensity. 
+2021.03.03 = Included export option for fitted paramters. See function export_results. 
 """
 
-version = '0.1'
-date = '2021.03.02'
+version = '0.2'
+date = '2021.03.03'
 
 import matplotlib.pyplot as plt
 import warnings
@@ -22,7 +23,7 @@ from SLS_DLS1 import (extract_data, plot_raw_intensity, plot_all_g2s,
                     toluene_normalization, sample_intensity, plot_intensity,
                     analyze_static_intensity, analyze_correlation_function,
                     plot_analyzed_correlations_functions, plot_dls_results,
-                    export_DLS_parameters, export_intensity)
+                    export_DLS_parameters, export_intensity, export_results)
 
 plot_raw_data = False
 analyze_static = True
@@ -108,4 +109,8 @@ if analyze_dynamic is True:
     plot_dls_results(sample_info, dls_methods)
     export_DLS_parameters(sample_info, dls_methods)
 #######################################################
-# print(sample_info)
+
+export_results(sample_info)
+
+        
+
