@@ -36,6 +36,32 @@ def Frisken(g2_tau):
 
     return out, g2_calc
 
+
+
+def Double_Exponential(g2_tau):
+    ''' In this function, the field correlation function is analyzed as:
+        g1(tau) = A*[alpha*exp(-Gamma1*tau)+(1-alpha)*exp(-Gamma2*tau)]'''
+        
+    tau, g2 = g2_tau[0,:], g2_tau[1,:]
+    
+    fit_params = Parameters()
+    fit_params.add('A', value = 0.3, vary=True)
+    fit_params.add('Gamma_1', value = 0.01, min=0.001, vary=True)
+    fit_params.add('beta', value = 15, min=2, vary=True)
+    fit_params.add('Gamma_2', expr='Gamma_1*beta')
+    fit_params.add('alpha', value=0.5, min=0.01, max=0.99, vary=True)
+    
+    def f2min(params):
+        vals = params.valuesdict()
+        model = vals['A']*(vals['alpha']*np.exp(-vals['Gamma_1']*tau)+(1-vals['alpha'])*np.exp(-vals['Gamma_2']*tau))**2
+        return (g2 - model)
+    
+    out = minimize(f2min, fit_params, xtol=1e-6)
+    
+    g2_calc = out.params['A'].value*(out.params['alpha'].value*np.exp(-out.params['Gamma_1'].value*tau)+(1-out.params['alpha'].value)*np.exp(-out.params['Gamma_2'].value*tau))**2
+    
+    return out, g2_calc
+
 def Cumulant(g2_tau,decay):
     ''' In this function, the correlation function is analyzed  untill it has decayed by 20% as:
         ln g2(tau) = ln(A) -2*Gamma*tau) + mu2/2*tau**2'''

@@ -102,21 +102,21 @@ def extract_data(sample_info):
     print('Data from {} imported correcty.'.format(data_path))
     
     
-    data_solvent = {}
-    if sample_info['data_path_solvent']: #if the solvent data path has been provided
-        solvent_path = sample_info['data_path_solvent']
-        for file in sorted(os.listdir(solvent_path)):
-            if file.endswith(".ASC"):
-                data_solvent[file] =  extract_data_file(solvent_path, file)  
-        parameters = ['T', 'Angle', 'Imon', 'CR0', 'CR1', 'mean_CR0', 'mean_CR1', 'Date_Time', 'Wavelength'] #parameters found in the summary pandas dataframe
-        solvent_summary =  pd.DataFrame(columns=parameters)
-        for key in data_solvent:
-            temp_dict = {requested_value : data_solvent[key][requested_value] for requested_value in parameters}
-            solvent_summary.loc[key] = temp_dict
+    # data_solvent = {}
+    # if sample_info['data_path_solvent']: #if the solvent data path has been provided
+    #     solvent_path = sample_info['data_path_solvent']
+    #     for file in sorted(os.listdir(solvent_path)):
+    #         if file.endswith(".ASC"):
+    #             data_solvent[file] =  extract_data_file(solvent_path, file)  
+    #     parameters = ['T', 'Angle', 'Imon', 'CR0', 'CR1', 'mean_CR0', 'mean_CR1', 'Date_Time', 'Wavelength'] #parameters found in the summary pandas dataframe
+    #     solvent_summary =  pd.DataFrame(columns=parameters)
+    #     for key in data_solvent:
+    #         temp_dict = {requested_value : data_solvent[key][requested_value] for requested_value in parameters}
+    #         solvent_summary.loc[key] = temp_dict
     
-        solvent_summary['q'] = 4*np.pi/data_summary['Wavelength']*sample_info['refractive_index']*np.sin(np.radians(data_summary['Angle']/2))
-        solvent_summary['Date_Time']= pd.to_datetime(solvent_summary['Date_Time'])        
-        print('Data from {} imported correcty.'.format(solvent_path))
+    #     solvent_summary['q'] = 4*np.pi/data_summary['Wavelength']*sample_info['refractive_index']*np.sin(np.radians(data_summary['Angle']/2))
+    #     solvent_summary['Date_Time']= pd.to_datetime(solvent_summary['Date_Time'])        
+    #     print('Data from {} imported correcty.'.format(solvent_path))
 
     
     
@@ -478,7 +478,26 @@ def plot_analyzed_correlations_functions(sample_info, dls_methods):
                     ax2.plot( data['sample_data'][run]['g2s'].index.to_list(), residual)
                     
                     counter += 1 
+ 
+                if dls_methods['Double_exponential'] is True:
+                    gs1 = gridspec.GridSpecFromSubplotSpec(2, 1,  subplot_spec=outer[counter], hspace=0.0, height_ratios=[2,1])
                     
+                    ax1 = fig.add_subplot(gs1[0])
+                    ax2 = fig.add_subplot(gs1[1], sharex=ax1)
+                    
+                    ax1.set_xscale("log", nonpositive='clip')
+                    ax2.set_xscale("log", nonpositive='clip')
+                    
+                    ax1.set_title('Double_exponential')
+                    ax1.set_ylabel('$g^{(2)}(\\tau$)')
+                    ax2.set_xlabel('$\\tau$ / ms')
+                    ax2.set_ylabel('Residual')                
+                    ax1.plot( data['sample_data'][run]['g2s'].index.to_list(), data['sample_data'][run]['g2s']['g2_average'].to_list(), 'o')
+                    ax1.plot( data['sample_data'][run]['g2s'].index.to_list(), data['sample_data'][run]['g2s']['g2_Double_Exponential'].to_list())
+                    residual = data['sample_data'][run]['g2s']['g2_average'].to_numpy() - data['sample_data'][run]['g2s']['g2_Double_Exponential'].to_numpy()
+                    ax2.plot( data['sample_data'][run]['g2s'].index.to_list(), residual)
+                    
+                    counter += 1 
                     
                 if dls_methods['Stretched_exponential'] is True:
                     gs1 = gridspec.GridSpecFromSubplotSpec(2, 1,  subplot_spec=outer[counter], hspace=0.0, height_ratios=[2,1])
@@ -510,6 +529,8 @@ def plot_analyzed_correlations_functions(sample_info, dls_methods):
                 print('Stretched exponential fit on sample {} performed'.format(sample))
             if dls_methods['Frisken'] is True:
                 print('Frisken fit on sample {} performed'.format(sample))
+            if dls_methods['Double_exponential'] is True:
+                print('Double Exponential fit on sample {} performed'.format(sample))                
     return None
    
 def plot_dls_results(sample_info, dls_methods):
@@ -590,7 +611,7 @@ def plot_dls_results(sample_info, dls_methods):
                    s1 = 'D(0)$_{{stretched}}$ = {:.2f} $\mu$m^2 s$^{{-1}}$'.format(sample_info[sample]['D0_stretched'])
             
                ax.plot([],[], ' ', label=s1)
-
+               
 
 
 
@@ -614,6 +635,8 @@ def analyze_correlation_function(sample_info, dls_methods):
             cumulant_temp = pd.DataFrame(columns=['run', 'CM_A', 'CM_A_err', 'CM_Gamma', 'CM_Gamma_err', 'CM_mu2', 'CM_mu2_err'])
        if dls_methods['Stretched_exponential'] is True:
             stretched_temp = pd.DataFrame(columns=['run', 'SE_A', 'SE_A_err', 'SE_Gamma', 'SE_Gamma_err', 'SE_beta', 'SE_beta_err'])
+       if dls_methods['Double_exponential'] is True:
+           double_exp_temp = pd.DataFrame(columns=['run', 'DE_A', 'DE_A_err', 'DE_Gamma_1', 'DE_Gamma_1_err',  'DE_Gamma_2', 'DE_Gamma_2_err',  'DE_alpha', 'DE_alpha_err'])
        
        for run in data['sample_data']:
            g2_tau = np.array([data['sample_data'][run]['g2s'].index.to_list(), data['sample_data'][run]['g2s']['g2_average'].to_list()])
@@ -652,6 +675,22 @@ def analyze_correlation_function(sample_info, dls_methods):
                                 'SE_beta_err': Stretched_params.params['beta'].stderr}
                stretched_temp = stretched_temp.append(stretched_pars, ignore_index=True)
                
+           if dls_methods['Double_exponential'] is True: 
+               Double_exp_params, data['sample_data'][run]['g2s']['g2_Double_Exponential'] = dls.Double_Exponential(g2_tau)
+               double_exponential_pars =  {'run':run,
+                                'DE_A': Double_exp_params.params['A'].value,
+                                'DE_A_err': Double_exp_params.params['A'].stderr, 
+                                'DE_Gamma_1': Double_exp_params.params['Gamma_1'].value, 
+                                'DE_Gamma_1_err': Double_exp_params.params['Gamma_1'].stderr, 
+                                'DE_Gamma_2': Double_exp_params.params['Gamma_2'].value, 
+                                'DE_Gamma_2_err': Double_exp_params.params['Gamma_2'].stderr, 
+                                'DE_alpha': Double_exp_params.params['alpha'].value, 
+                                'DE_alpha_err':Double_exp_params.params['alpha'].stderr}
+               
+               double_exp_temp = double_exp_temp.append(double_exponential_pars, ignore_index=True)
+               
+               
+               
            if dls_methods['Contin'] is True:
                # data['sample_data'][run]['g2s']['g2_Contin'] = dls.Contin(g2_tau)
                alldata =dls.Contin(g2_tau, dls_methods['Contin_pars'])
@@ -678,6 +717,11 @@ def analyze_correlation_function(sample_info, dls_methods):
        if dls_methods['Stretched_exponential'] is True:
            stretched_temp.set_index('run',inplace=True) 
            data['sample_summary'] = pd.concat([data['sample_summary'], stretched_temp], axis=1)
+        
+       if dls_methods['Double_exponential'] is True:
+           double_exp_temp.set_index('run',inplace=True) 
+           data['sample_summary'] = pd.concat([data['sample_summary'], double_exp_temp], axis=1)
+           
 
        # print(frisken_temp)
        # print(data['sample_summary'])
@@ -714,9 +758,10 @@ def export_results(sample_info):
             if pars == 'Sample':
                 None
             else:
-                # print(pars)
-                # print(pars, s[pars])
-                params[pars] = s[pars]
+                try:
+                    params[pars] = s[pars]
+                except:
+                    params[pars] = np.nan
         # print(params)
         results = results.append(params, ignore_index=True)
         results.set_index('Sample', inplace=True)
