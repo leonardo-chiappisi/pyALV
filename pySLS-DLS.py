@@ -8,10 +8,11 @@ Script for the analysis of static and dynamic light scattering data from the ALV
 2021.03.03: Included export option for fitted paramters. See function export_results. 
 2021.07.09: Minor bug correction in export function.
 2021.11.08: Added the double exponential fit analysis of the DLS data. 
+2021.11.15: Minor bug correction
 """
 
-version = '0.2.1'
-date = '2021.03.03'
+version = '0.2.3'
+date = '2021.11.15'
 
 import matplotlib.pyplot as plt
 import warnings
