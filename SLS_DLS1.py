@@ -737,7 +737,7 @@ def export_DLS_parameters(sample_info, dls_methods):
             s = '# The units are: q -- 1/nm; Gamma  -- 1/ms\n'
             f.write(s)
         
-        data['sample_summary'].sort_values(by=['run']).to_csv(filename, mode='a')
+        data['sample_summary'].sort_index().to_csv(filename, mode='a')
 
     
     
