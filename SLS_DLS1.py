@@ -8,6 +8,7 @@ from math import radians, exp
 from scipy.special import gamma
 from scipy.stats import linregress
 import os as os
+import shutil
 import numpy as np
 import sys
 import pandas as pd
@@ -55,16 +56,18 @@ def extract_data_file(data_path, filename):
             if line.startswith('"Correlation"'):
                 Correlation_line = index
                 
-    CRs = np.loadtxt(os.path.join(data_path, filename), skiprows=Count_rate_line+2, encoding='latin1', usecols=(0,1,2), max_rows=Monitor_diode_line-Count_rate_line-2)
+    # print(os.path.join(data_path, filename))     
+    CRs = np.loadtxt(os.path.join(data_path, filename), skiprows=Count_rate_line+2, encoding='latin1', usecols=(0,1,2), max_rows=Monitor_diode_line-Count_rate_line-3)
     mean_CR0 = np.average(CRs[:,1])
     mean_CR1 = np.average(CRs[:,2])
-    temp = np.loadtxt(os.path.join(data_path, filename), skiprows=Correlation_line+1, encoding='latin1', usecols=(0,1,2), max_rows=Count_rate_line-Correlation_line-2)
+    temp = np.loadtxt(os.path.join(data_path, filename), skiprows=Correlation_line+1, encoding='latin1', usecols=(0,1,2), max_rows=Count_rate_line-Correlation_line-3)
     g2s = pd.DataFrame(temp, columns=['tau', 'g2_1','g2_2']).set_index('tau')
     g2s['g2_average'] = np.average([g2s['g2_1'].values, g2s['g2_2'].values], axis=0)
     g2s['g2_std'] = np.std([g2s['g2_1'].values, g2s['g2_2'].values], axis=0)
     
     
-    return {'T': T, 
+    return {'Filename': filename,
+            'T': T, 
             'Angle': Angle,
             'Imon': Imon, 
             'CR0': CR0,
@@ -78,6 +81,39 @@ def extract_data_file(data_path, filename):
             'CRs': CRs,
             'g2s':g2s}
 
+
+def group_data_files_by_temperature(df, tolerance):
+    """
+    Groups data files in a folder based on their temperature and moves them to new folders.
+
+    Args:
+        df (pandas.DataFrame): DataFrame containing experimental parameters, including temperature and filenames.
+        tolerance (float): Tolerance value used for grouping data files.
+
+    Returns:
+        None
+    """
+    # Create a set of unique temperatures in the DataFrame
+    temperatures = set(df['T'])
+
+    # Create a new folder for each unique temperature
+    for temp in temperatures:
+        # Round the temperature to the nearest multiple of the tolerance value
+        rounded_temp = round(temp / tolerance) * tolerance
+        
+        # Create a new folder for the rounded temperature
+        folder_name = f"{rounded_temp:.1f}"
+        os.makedirs(folder_name, exist_ok=True)
+
+        # Get a list of filenames corresponding to the current temperature
+        filenames = df[df['T'] == temp]['Filename']
+
+        # Move each file to the new folder
+        for filename in filenames:
+            shutil.move(filename, folder_name)
+
+    
+
 def extract_data(sample_info):
     ''' Extracts all information from the datafiles contained in the folder data_path, and returns
     a dictionary where each element is a dictionary will all the informations conatained for each
@@ -89,7 +125,7 @@ def extract_data(sample_info):
         if file.endswith(".ASC"):
             data[file] =  extract_data_file(data_path, file)    
     
-    parameters = ['T', 'Angle', 'Imon', 'CR0', 'CR1', 'mean_CR0', 'mean_CR1', 'Date_Time', 'Wavelength'] #parameters found in the summary pandas dataframe
+    parameters = ['Filename', 'T', 'Angle', 'Imon', 'CR0', 'CR1', 'mean_CR0', 'mean_CR1', 'Date_Time', 'Wavelength'] #parameters found in the summary pandas dataframe
     data_summary =  pd.DataFrame(columns=parameters)
     for key in data:
         temp_dict = {requested_value : data[key][requested_value] for requested_value in parameters}
@@ -97,7 +133,8 @@ def extract_data(sample_info):
     
     data_summary['q'] = 4*np.pi/data_summary['Wavelength']*sample_info['refractive_index']*np.sin(np.radians(data_summary['Angle']/2))
     
-    data_summary['Date_Time']= pd.to_datetime(data_summary['Date_Time'])        
+    data_summary['Date_Time']= pd.to_datetime(data_summary['Date_Time'])  
+    # print(data_summary)      
     data_average = data_summary.groupby(['Angle']).agg([np.mean, np.std])
     print('Data from {} imported correcty.'.format(data_path))
     
@@ -167,16 +204,31 @@ def plot_all_g2s(data, title, path):
     to be able to rapidly spot problems in the measurements. 
     '''
     def applyPlotStyle(title, ax):
-        ax.set_xlabel('$\tau$/ ms')
-        ax.set_ylabel('g$^{(\tau)}$ / a.u.')
+        ax.set_xlabel('$\\tau$/ ms')
+        ax.set_ylabel('g$^{(\\tau)}$ / a.u.')
         ax.set_xscale('log')
         ax.set_title(title)
       
     def plot(ax, data, file):
+        g2_t0 = np.average(data[file]['g2s']['g2_average'][:20])
+        if g2_t0 > 0.4:
+            ax.spines['bottom'].set_color('red')
+            ax.spines['top'].set_color('red')
+            ax.xaxis.label.set_color('red')
+            ax.tick_params(axis='x', colors='red')
+            ax.spines['right'].set_color('red')
+            ax.spines['left'].set_color('red')
+            ax.yaxis.label.set_color('red')
+            ax.tick_params(axis='y', colors='red')    
+            print('File {} has too large intercept, check the file and delete it if neccesary'.format(file))
+            
+            
+        
+            
         ax.plot(data[file]['g2s'].index, data[file]['g2s']['g2_1'], '-', linewidth=0.5)
         ax.plot(data[file]['g2s'].index, data[file]['g2s']['g2_2'], '-', linewidth=0.5)
         ax.plot(data[file]['g2s'].index, data[file]['g2s']['g2_average'], '-', linewidth=1.5)
-        # ax.plot(data[file]['g2s'][:,0], data[file]['g2s'][:,2], '-', linewidth=0.5)
+            # ax.plot(data[file]['g2s'][:,0], data[file]['g2s'][:,2], '-', linewidth=0.5)
         # ax.plot(data[file]['g2s'][:,0], data[file]['g2s'][:,3], '-', linewidth=1.5)
         
     
@@ -736,7 +788,7 @@ def export_DLS_parameters(sample_info, dls_methods):
         with open(filename, 'w') as f:
             s = '# The units are: q -- 1/nm; Gamma  -- 1/ms\n'
             f.write(s)
-        
+        # print(data['sample_summary'])
         data['sample_summary'].sort_index().to_csv(filename, mode='a')
 
     
