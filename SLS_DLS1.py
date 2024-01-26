@@ -383,7 +383,7 @@ def plot_intensity(sample_info):
 
     try:
         Iq = sample_info['I0']*np.exp(-1/3*sample_info['Rg']**2*sample['q', 'mean']**2)
-        fit = ax1.plot(sample['q', 'mean'], Iq, label='Guinier fit', color='C2')
+        fit = ax1.plot(sample['q', 'mean'].to_numpy(), Iq.to_numpy(), label='Guinier fit', color='C2')
         s1 = 'I(0) = {:.2f} $\pm$ {:.2f} $cm^{{-1}}$'.format(sample_info['I0'],  sample_info['I0_err'])
         s2 = 'R$_g$ = {:.0f} $\pm$ {:.0f} nm'.format(sample_info['Rg'],  sample_info['Rg_err'])
     except:
