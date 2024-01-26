@@ -10,10 +10,11 @@ Script for the analysis of static and dynamic light scattering data from the ALV
 2021.11.08: Added the double exponential fit analysis of the DLS data. 
 2021.11.15: Minor bug correction
 2023.03.25: Minor improvements in raw-data plotting
+2024.01.26: Changes to keep compatibility with pandas 2.0
 """
 
-version = '0.2.4'
-date = '2023.03.25'
+version = '0.2.5'
+date = '2024.01.26'
 
 import matplotlib.pyplot as plt
 import warnings
@@ -91,6 +92,74 @@ sample_info['DOPA'] = {'name': 'DOPA', #the name of the sample
                                     'Temperature_series': False, #were data measured at different temperature and should they be sorted according to temperature?
                                     'temperature_tolerance': 0.2, #float, groups all temperatures according to the mean temperature given this tolerance.
                                     }
+
+
+
+# sample_info['mPVC_mc_plast'] = {'name': 'mPVC_mc_plast', #the name of the sample
+#                                     'data_path': 'rawdata/Anastasia/mPVC_mc_plast',  #the datapath where all the ASC files are stored, can be relative or absolute. 
+#                                     'data_path_solvent': '',  #the datapath where all the ASC files relative to the solvent are stored, can be relative or absolute. 
+#                                     'conc': 0.1, #in gram/cm3
+#                                     'dndc': 0.15, #in cm3/gram
+#                                     'refractive_index': 1.332,
+#                                     'qmin': None,  #minimum q-value used for the analysis of the sls data
+#                                     'qmax': None, #maximum q-value used for the analysis of the sls data
+#                                     'time_series': False, #True if the experiment was performed at one angle as a function of time
+#                                     'Temperature_series': False, #were data measured at different temperature and should they be sorted according to temperature?
+#                                     'temperature_tolerance': 0.2, #float, groups all temperatures according to the mean temperature given this tolerance.
+#                                     }
+
+
+
+
+# sample_info['PolyDB_2h_irr'] = {'name': 'PolyDB_2h_irr', #the name of the sample
+#                                     'data_path': 'rawdata/Anastasia/PolyDB_2h_irr',  #the datapath where all the ASC files are stored, can be relative or absolute. 
+#                                     'data_path_solvent': '',  #the datapath where all the ASC files relative to the solvent are stored, can be relative or absolute. 
+#                                     'conc': 0.1, #in gram/cm3
+#                                     'dndc': 0.15, #in cm3/gram
+#                                     'refractive_index': 1.332,
+#                                     'qmin': None,  #minimum q-value used for the analysis of the sls data
+#                                     'qmax': None, #maximum q-value used for the analysis of the sls data
+#                                     'time_series': False, #True if the experiment was performed at one angle as a function of time
+#                                     'Temperature_series': False, #were data measured at different temperature and should they be sorted according to temperature?
+#                                     'temperature_tolerance': 0.2, #float, groups all temperatures according to the mean temperature given this tolerance.
+#                                     }
+
+# # sample_info['PolyDB_16h_irr'] = {'name': 'PolyDB_16h_irr', #the name of the sample
+# #                                     'data_path': 'rawdata/Anastasia/PolyDB_16h_irr',  #the datapath where all the ASC files are stored, can be relative or absolute. 
+# #                                     'data_path_solvent': '',  #the datapath where all the ASC files relative to the solvent are stored, can be relative or absolute. 
+# #                                     'conc': 0.1, #in gram/cm3
+# #                                     'dndc': 0.15, #in cm3/gram
+# #                                     'refractive_index': 1.332,
+# #                                     'qmin': None,  #minimum q-value used for the analysis of the sls data
+# #                                     'qmax': None, #maximum q-value used for the analysis of the sls data
+# #                                     'time_series': False, #True if the experiment was performed at one angle as a function of time
+# #                                     'Temperature_series': False, #were data measured at different temperature and should they be sorted according to temperature?
+# #                                     'temperature_tolerance': 0.2, #float, groups all temperatures according to the mean temperature given this tolerance.
+# #                                     }
+
+# sample_info['polyDB_alone'] = {'name': 'polyDB_alone', #the name of the sample
+#                                     'data_path': 'rawdata/Anastasia/polyDB_alone',  #the datapath where all the ASC files are stored, can be relative or absolute. 
+#                                     'data_path_solvent': '',  #the datapath where all the ASC files relative to the solvent are stored, can be relative or absolute. 
+#                                     'conc': 0.1, #in gram/cm3
+#                                     'dndc': 0.15, #in cm3/gram
+#                                     'refractive_index': 1.332,
+#                                     'qmin': None,  #minimum q-value used for the analysis of the sls data
+#                                     'qmax': None, #maximum q-value used for the analysis of the sls data
+#                                     'time_series': False, #True if the experiment was performed at one angle as a function of time
+#                                     'Temperature_series': False, #were data measured at different temperature and should they be sorted according to temperature?
+#                                     'temperature_tolerance': 0.2, #float, groups all temperatures according to the mean temperature given this tolerance.
+#                                     }
+
+
+
+
+
+
+
+
+
+
+
 
 
 

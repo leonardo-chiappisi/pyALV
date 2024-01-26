@@ -127,6 +127,8 @@ def extract_data(sample_info):
     
     parameters = ['Filename', 'T', 'Angle', 'Imon', 'CR0', 'CR1', 'mean_CR0', 'mean_CR1', 'Date_Time', 'Wavelength'] #parameters found in the summary pandas dataframe
     data_summary =  pd.DataFrame(columns=parameters)
+    # print(data_summary)      
+    
     for key in data:
         temp_dict = {requested_value : data[key][requested_value] for requested_value in parameters}
         data_summary.loc[key] = temp_dict
@@ -134,7 +136,8 @@ def extract_data(sample_info):
     data_summary['q'] = 4*np.pi/data_summary['Wavelength']*sample_info['refractive_index']*np.sin(np.radians(data_summary['Angle']/2))
     
     data_summary['Date_Time']= pd.to_datetime(data_summary['Date_Time'])  
-    # print(data_summary)      
+    data_summary = data_summary.drop(columns=['Filename'])
+    
     data_average = data_summary.groupby(['Angle']).agg([np.mean, np.std])
     print('Data from {} imported correcty.'.format(data_path))
     
@@ -225,9 +228,9 @@ def plot_all_g2s(data, title, path):
             
         
             
-        ax.plot(data[file]['g2s'].index, data[file]['g2s']['g2_1'], '-', linewidth=0.5)
-        ax.plot(data[file]['g2s'].index, data[file]['g2s']['g2_2'], '-', linewidth=0.5)
-        ax.plot(data[file]['g2s'].index, data[file]['g2s']['g2_average'], '-', linewidth=1.5)
+        ax.plot(data[file]['g2s'].index.to_numpy(), data[file]['g2s']['g2_1'].to_numpy(), '-', linewidth=0.5)
+        ax.plot(data[file]['g2s'].index.to_numpy(), data[file]['g2s']['g2_2'].to_numpy(), '-', linewidth=0.5)
+        ax.plot(data[file]['g2s'].index.to_numpy(), data[file]['g2s']['g2_average'].to_numpy(), '-', linewidth=1.5)
             # ax.plot(data[file]['g2s'][:,0], data[file]['g2s'][:,2], '-', linewidth=0.5)
         # ax.plot(data[file]['g2s'][:,0], data[file]['g2s'][:,3], '-', linewidth=1.5)
         
@@ -618,11 +621,11 @@ def plot_dls_results(sample_info, dls_methods):
            
            if dls_methods['Frisken'] is True:
                D_app_Frisken = data['FR_Gamma']/(data['q'])**2 * 1000 / 1e6 #from nm^2/ms to mu2/s
-               ax.plot(data['q']**2*1e4, D_app_Frisken, 'bo', alpha=0.75, label='Frisken fit')
+               ax.plot(data['q'].to_numpy()**2*1e4, D_app_Frisken.to_numpy(), 'bo', alpha=0.75, label='Frisken fit')
 
                linfit = linregress(data['q']**2*1e4, D_app_Frisken)
                Dapp_fit = data['q']**2*1e4*linfit.slope + linfit.intercept
-               ax.plot(data['q']**2*1e4, Dapp_fit)
+               ax.plot(data['q'].to_numpy()**2*1e4, Dapp_fit.to_numpy())
                try:
                    sample_info[sample]['D0_Frisken'], sample_info[sample]['D0_Frisken_err'] = linfit.intercept, linfit.intercept_stderr
                    s1 = 'D(0)$_{{Frisken}}$ = {:.2f} $\pm$ {:.2f} $\mu$m^2 s$^{{-1}}$'.format(sample_info[sample]['D0_Frisken'],  sample_info[sample]['D0_Frisken_err'])
@@ -634,11 +637,11 @@ def plot_dls_results(sample_info, dls_methods):
     
            if dls_methods['Cumulant'] is True:
                D_app_cumulant = data['CM_Gamma']/(data['q'])**2 * 1000 / 1e6 #from nm^2/ms to mu2/s
-               ax.plot(data['q']**2*1e4, D_app_cumulant, 'rs',  alpha=0.75, label='Cumulant fit')
+               ax.plot(data['q'].to_numpy()**2*1e4, D_app_cumulant.to_numpy(), 'rs',  alpha=0.75, label='Cumulant fit')
                
                linfit = linregress(data['q']**2*1e4, D_app_cumulant)
                Dapp_fit = data['q']**2*1e4*linfit.slope + linfit.intercept
-               ax.plot(data['q']**2*1e4, Dapp_fit, color='red')
+               ax.plot(data['q'].to_numpy()**2*1e4, Dapp_fit.to_numpy(), color='red')
                try:
                    sample_info[sample]['D0_Cumulant'], sample_info[sample]['D0_Cumulant_err'] = linfit.intercept, linfit.intercept_stderr
                    s1 = 'D(0)$_{{Cumulant}}$ = {:.2f} $\pm$ {:.2f} $\mu$m^2 s$^{{-1}}$'.format(sample_info[sample]['D0_Cumulant'],  sample_info[sample]['D0_Cumulant_err'])
@@ -650,11 +653,11 @@ def plot_dls_results(sample_info, dls_methods):
     
            if dls_methods['Stretched_exponential'] is True:
                D_app_stretched = data['SE_Gamma']/data['SE_beta']*gamma(1/data['SE_beta'])/(data['q'])**2 * 1000 / 1e6 #from nm^2/ms to mu2/s
-               plt.plot(data['q']**2*1e4, D_app_stretched, 'mv',  alpha=0.75, label='Stretched exp. fit')        
+               plt.plot(data['q'].to_numpy()**2*1e4, D_app_stretched.to_numpy(), 'mv',  alpha=0.75, label='Stretched exp. fit')        
 
                linfit = linregress(data['q']**2*1e4, D_app_stretched)
                Dapp_fit = data['q']**2*1e4*linfit.slope + linfit.intercept
-               ax.plot(data['q']**2*1e4, Dapp_fit, color='magenta')
+               ax.plot(data['q'].to_numpy()**2*1e4, Dapp_fit.to_numpy(), color='magenta')
                try:
                    sample_info[sample]['D0_stretched'], sample_info[sample]['D0_stretched_err'] = linfit.intercept, linfit.intercept_stderr
                    s1 = 'D(0)$_{{stretched}}$ = {:.2f} $\pm$ {:.2f} $\mu$m^2 s$^{{-1}}$'.format(sample_info[sample]['D0_stretched'],  sample_info[sample]['D0_stretched_err'])
@@ -703,7 +706,11 @@ def analyze_correlation_function(sample_info, dls_methods):
                                 'FR_mu2':Frisken_params.params['mu2'].value, 
                                 'FR_mu2_err':Frisken_params.params['mu2'].stderr}
                
-               frisken_temp = frisken_temp.append(frisken_pars, ignore_index=True)
+               # frisken_temp = frisken_temp.append(frisken_pars, ignore_index=True)
+               frisken_temp = pd.concat([frisken_temp,  pd.DataFrame([frisken_pars])], ignore_index=True)
+ 
+               
+               
 
            if dls_methods['Cumulant'] is True: 
                Cumulant_params, data['sample_data'][run]['g2s']['g2_Cumulant'] = dls.Cumulant(g2_tau, dls_methods['Cumulant_decay'])
@@ -714,7 +721,8 @@ def analyze_correlation_function(sample_info, dls_methods):
                                 'CM_Gamma_err': Cumulant_params.params['Gamma'].stderr, 
                                 'CM_mu2': Cumulant_params.params['mu2'].value, 
                                 'CM_mu2_err': Cumulant_params.params['mu2'].stderr}
-               cumulant_temp = cumulant_temp.append(cumulant_pars, ignore_index=True)
+               cumulant_temp = pd.concat([cumulant_temp,  pd.DataFrame([cumulant_pars])], ignore_index=True)
+#               cumulant_temp = cumulant_temp.append(cumulant_pars, ignore_index=True)
 
            if dls_methods['Stretched_exponential'] is True: 
                Stretched_params, data['sample_data'][run]['g2s']['g2_Stretched_exp'] = dls.Stretched_exponential(g2_tau)
@@ -725,7 +733,8 @@ def analyze_correlation_function(sample_info, dls_methods):
                                 'SE_Gamma_err': Stretched_params.params['Gamma'].stderr, 
                                 'SE_beta': Stretched_params.params['beta'].value, 
                                 'SE_beta_err': Stretched_params.params['beta'].stderr}
-               stretched_temp = stretched_temp.append(stretched_pars, ignore_index=True)
+               # stretched_temp = stretched_temp.append(stretched_pars, ignore_index=True)
+               stretched_temp = pd.concat([stretched_temp,  pd.DataFrame([stretched_pars])], ignore_index=True)
                
            if dls_methods['Double_exponential'] is True: 
                Double_exp_params, data['sample_data'][run]['g2s']['g2_Double_Exponential'] = dls.Double_Exponential(g2_tau)
@@ -739,8 +748,8 @@ def analyze_correlation_function(sample_info, dls_methods):
                                 'DE_alpha': Double_exp_params.params['alpha'].value, 
                                 'DE_alpha_err':Double_exp_params.params['alpha'].stderr}
                
-               double_exp_temp = double_exp_temp.append(double_exponential_pars, ignore_index=True)
                
+               double_exp_temp = pd.concat([double_exp_temp,  pd.DataFrame([double_exponential_pars])], ignore_index=True)
                
                
            if dls_methods['Contin'] is True:
@@ -815,7 +824,8 @@ def export_results(sample_info):
                 except:
                     params[pars] = np.nan
         # print(params)
-        results = results.append(params, ignore_index=True)
+        results = pd.concat([results, pd.DataFrame([params])], ignore_index=True)
+        # results = results.append(params, ignore_index=True)
         results.set_index('Sample', inplace=True)
     
     results.to_csv('results.csv')
